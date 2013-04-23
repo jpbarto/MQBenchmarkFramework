@@ -1,0 +1,31 @@
+
+Props File  : null
+Duration    : 10
+Msg Size (b): 128
+Producers   : 1
+Consumers   : 1
+Send Limit  : 0
+Rpt Interval: 1
+Raw Output  : false
+Per Msg Out : false
+Silent      : false
+Logging     : output.log
+
+Time Step 1s: Sent (msg/s): 2632794, Recv (msg/s): 2414241, Latency (min/avg/max ms): -1/0/0
+Time Step 2s: Sent (msg/s): 3021575, Recv (msg/s): 3116733, Latency (min/avg/max ms): -1/0/0
+Time Step 3s: Sent (msg/s): 3053601, Recv (msg/s): 3170834, Latency (min/avg/max ms): -1/0/0
+Time Step 4s: Sent (msg/s): 3008193, Recv (msg/s): 3156617, Latency (min/avg/max ms): -1/0/0
+Time Step 5s: Sent (msg/s): 2971482, Recv (msg/s): 3126888, Latency (min/avg/max ms): -1/0/0
+Time Step 6s: Sent (msg/s): 2976380, Recv (msg/s): 3140565, Latency (min/avg/max ms): -1/0/0
+Time Step 7s: Sent (msg/s): 2968175, Recv (msg/s): 3129642, Latency (min/avg/max ms): -1/0/0
+Time Step 8s: Sent (msg/s): 2946565, Recv (msg/s): 3114756, Latency (min/avg/max ms): -1/0/0
+Time Step 9s: Sent (msg/s): 2961586, Recv (msg/s): 3119982, Latency (min/avg/max ms): -1/0/0
+Time Step 10s: Sent (msg/s): 2969994, Recv (msg/s): 3128260, Latency (min/avg/max ms): -1/0/0
+
+Final Report: 
+Actual Duration: 11.0s
+Sent 32489547 messages
+Received 33756699 messages
+Avg Send Rate: 2953595.2 msg/s
+Avg Recv Rate: 3068791.0 msg/s
+Avg Latency: 0 ms
