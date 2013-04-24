@@ -9,6 +9,9 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.QueueingConsumer;
 import com.rabbitmq.client.ShutdownSignalException;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.r9labs.mq.benchmark.drivers.ConsumingDriver;
@@ -23,86 +26,67 @@ public class RabbitMQConsumer extends RabbitMQDriverBase implements ConsumingDri
     boolean autoAck = true;
     private int acksWaiting = 0;
     private int ackBatchSize = 1;
+    private String queueName = null;
+    private String exchangeName = null;
+    private String exchangeType = null;
+    private String routingKey = null;
 
-    public RabbitMQConsumer(String hostname, int port, String username, String password, final boolean tcpNoDelay, final int recvBuffSize, String exchangeName, String exchangeType, String routingKey, int prefetchSize) throws IOException {
-        super(hostname, port, username, password, tcpNoDelay, recvBuffSize);
+    public RabbitMQConsumer(String amqpURI, final boolean tcpNoDelay, final int recvBuffSize, String exchangeName, String exchangeType, String routingKey, int prefetchSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, tcpNoDelay, recvBuffSize);
 
-        chan.basicQos(prefetchSize);
-
-        cin = new QueueingConsumer(chan);
-
-        chan.exchangeDeclare(exchangeName, exchangeType);
-
-        String queueName = chan.queueDeclare().getQueue();
-        chan.queueBind(queueName, exchangeName, routingKey);
-        chan.basicConsume(queueName, autoAck, cin);
+         chan.basicQos(prefetchSize);
+         this.exchangeName = exchangeName;
+         this.exchangeType = exchangeType;
+         this.routingKey = routingKey;
     }
 
-    public RabbitMQConsumer(String hostname, int port, String username, String password, final boolean tcpNoDelay, final int recvBuffSize, String exchangeName, String exchangeType, String routingKey, int prefetchSize, int ackBatchSize) throws IOException {
-        super(hostname, port, username, password, tcpNoDelay, recvBuffSize);
+    public RabbitMQConsumer(String amqpURI, final boolean tcpNoDelay, final int recvBuffSize, String queueName, int prefetchSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, tcpNoDelay, recvBuffSize);
 
+        chan.basicQos(prefetchSize);
+        this.queueName = queueName;
+    }
+
+    public RabbitMQConsumer(String amqpURI, final boolean tcpNoDelay, final int recvBuffSize, int prefetchSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, tcpNoDelay, recvBuffSize);
+
+        chan.basicQos(prefetchSize);
+    }
+    
+    public void setAckBatchSize (int ackBatchSize) {
         this.ackBatchSize = ackBatchSize;
-        this.autoAck = false;
-
-        chan.basicQos(prefetchSize);
-
-        cin = new QueueingConsumer(chan);
-
-        chan.exchangeDeclare(exchangeName, exchangeType);
-
-        String queueName = chan.queueDeclare().getQueue();
-        chan.queueBind(queueName, exchangeName, routingKey);
-        chan.basicConsume(queueName, autoAck, cin);
-    }
-
-    public RabbitMQConsumer(String hostname, int port, String username, String password, final boolean tcpNoDelay, final int recvBuffSize, String queueName, int prefetchSize) throws IOException {
-        super(hostname, port, username, password, tcpNoDelay, recvBuffSize);
-
-        chan.basicQos(prefetchSize);
-
-        cin = new QueueingConsumer(chan);
-
-        chan.basicConsume(queueName, autoAck, cin);
-    }
-
-    public RabbitMQConsumer(String hostname, int port, String username, String password, final boolean tcpNoDelay, final int recvBuffSize, String queueName, int prefetchSize, int ackBatchSize) throws IOException {
-        super(hostname, port, username, password, tcpNoDelay, recvBuffSize);
-
-        this.ackBatchSize = ackBatchSize;
-        this.autoAck = false;
-
-        chan.basicQos(prefetchSize);
-
-        cin = new QueueingConsumer(chan);
-
-        chan.basicConsume(queueName, autoAck, cin);
-    }
-
-    public RabbitMQConsumer(String hostname, int port, String username, String password, final boolean tcpNoDelay, final int recvBuffSize, int prefetchSize) throws IOException {
-        super(hostname, port, username, password, tcpNoDelay, recvBuffSize);
-
-        chan.basicQos(prefetchSize);
-
-        cin = new QueueingConsumer(chan);
-        String queueName = chan.queueDeclare().getQueue();
-        chan.basicConsume(queueName, autoAck, cin);
-    }
-
-    public RabbitMQConsumer(String hostname, int port, String username, String password, final boolean tcpNoDelay, final int recvBuffSize, int prefetchSize, int ackBatchSize) throws IOException {
-        super(hostname, port, username, password, tcpNoDelay, recvBuffSize);
-
-        this.ackBatchSize = ackBatchSize;
-        this.autoAck = false;
-
-        chan.basicQos(prefetchSize);
-
-        cin = new QueueingConsumer(chan);
-        String queueName = chan.queueDeclare().getQueue();
-        chan.basicConsume(queueName, autoAck, cin);
     }
 
     @Override
     public void start() {
+        if (ackBatchSize > 0) {
+            autoAck = false;
+        }
+
+        cin = new QueueingConsumer(chan);
+
+        if (queueName == null) {
+            try {
+                queueName = chan.queueDeclare().getQueue();
+            } catch (IOException ex) {
+                Logger.getLogger(RabbitMQConsumer.class.getName()).log(Level.SEVERE, "Error trying to declare a queue: " + queueName, ex);
+            }
+        }
+
+        if (exchangeName != null) {
+            try {
+                chan.exchangeDeclare(exchangeName, exchangeType);
+                chan.queueBind(queueName, exchangeName, routingKey);
+            } catch (IOException ex) {
+                Logger.getLogger(RabbitMQConsumer.class.getName()).log(Level.SEVERE, "Error binding to exchange: "+ exchangeName, ex);
+            }
+        }
+
+        try {
+            chan.basicConsume(queueName, autoAck, cin);
+        } catch (IOException ex) {
+            Logger.getLogger(RabbitMQConsumer.class.getName()).log(Level.SEVERE, "Error while preparing to consume from queue: " + queueName, ex);
+        }
     }
 
     @Override

@@ -5,6 +5,9 @@
 package org.r9labs.mq.benchmark.drivers.amqp.v091;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,7 +21,7 @@ import org.r9labs.mq.benchmark.drivers.DriverFactory;
  */
 public class RabbitMQFactory implements DriverFactory {
 
-    String host;
+    String amqpURI;
     int port;
     String username;
     String password;
@@ -39,10 +42,7 @@ public class RabbitMQFactory implements DriverFactory {
 
     @Override
     public void initialize(Properties config) {
-        host = (config.containsKey("amqp.broker.host")) ? config.getProperty("amqp.broker.host") : "127.0.0.1";
-        port = (config.containsKey("amqp.broker.port")) ? Integer.valueOf(config.getProperty("amqp.broker.port")) : 5672;
-        username = (config.containsKey("amqp.broker.username")) ? config.getProperty("amqp.broker.username") : "guest";
-        password = (config.containsKey("amqp.broker.password")) ? config.getProperty("amqp.broker.password") : "guest";
+        amqpURI = (config.containsKey("amqp.broker.uri")) ? config.getProperty("amqp.broker.uri") : "amqp://127.0.0.1";
 
         tcpNoDelay = (config.containsKey("amqp.socket.tcpNoDelay")) ? Boolean.valueOf(config.getProperty("amqp.socket.tcpNoDelay")) : true;
         sendBufferSize = (config.containsKey("amqp.socket.sendBufferSize")) ? Integer.valueOf(config.getProperty("amqp.socket.sendBufferSize")) : 20481;
@@ -58,7 +58,7 @@ public class RabbitMQFactory implements DriverFactory {
         croutingKey = (config.containsKey("amqp.consumer.routingkey")) ? config.getProperty("amqp.consumer.routingkey") : "a.b.c";
         cqueueName = (config.containsKey("amqp.consumer.queue")) ? config.getProperty("amqp.consumer.queue") : null;
         cprefetch = (config.containsKey("amqp.consumer.prefetch")) ? Integer.valueOf(config.getProperty("amqp.consumer.prefetch")) : 1000;
-        cackBatch = (config.containsKey("amqp.consumer.ackBatch")) ? Integer.valueOf(config.getProperty("amqp.consumer.ackBatch")) : -1;
+        cackBatch = (config.containsKey("amqp.consumer.ackEvery")) ? Integer.valueOf(config.getProperty("amqp.consumer.ackEvery")) : -1;
     }
 
     @Override
@@ -66,10 +66,7 @@ public class RabbitMQFactory implements DriverFactory {
         StringBuffer usage = new StringBuffer();
         usage.append("RabbitMQFactory Properties File Values:\n");
         usage.append("\n");
-        usage.append("amqp.broker.host            : The IP or hostname of the AMQP broker\n");
-        usage.append("amqp.broker.port            : Port number on which the broker is listening\n");
-        usage.append("amqp.broker.username        : Username to connect with\n");
-        usage.append("amqp.broker.password        : Password to authenticate user\n");
+        usage.append("amqp.broker.uri             : The URI for the AMQP broker\n");
         usage.append("amqp.socket.tcpNoDelay      : {true|false} Enable | Disable TCP No delay on network sockets\n");
         usage.append("amqp.socket.sendBufferSize  : The size of the sockets sending buffer");
         usage.append("amqp.socket.recvBufferSize  : The size of the sockets receiving buffer");
@@ -82,7 +79,7 @@ public class RabbitMQFactory implements DriverFactory {
         usage.append("amqp.consumer.routingkey    : Routing key for consumer\n");
         usage.append("amqp.consumer.queue         : The name of the queue to consume from; one will be created if not specified\n");
         usage.append("amqp.consumer.prefetch      : The number of messages to prefetch\n");
-        usage.append("amqp.consumer.ackBatch      : Batch acknowledge messages by waiting to recieve ackBatch messages before sending an acknowledge message.\n");
+        usage.append("amqp.consumer.ackEvery      : Batch acknowledgement by only sending an acknowledge message ackEvery messages\n");
         return usage.toString();
     }
 
@@ -91,13 +88,13 @@ public class RabbitMQFactory implements DriverFactory {
         driverCount++;
         try {
             if (pqueueName != null) {
-                return new RabbitMQProducer(host, port, username, password, tcpNoDelay, sendBufferSize, pqueueName);
+                return new RabbitMQProducer(amqpURI, tcpNoDelay, sendBufferSize, pqueueName);
             } else {
-                return new RabbitMQProducer(host, port, username, password, tcpNoDelay, sendBufferSize, pexchange, pextype, proutingKey);
+                return new RabbitMQProducer(amqpURI, tcpNoDelay, sendBufferSize, pexchange, pextype, proutingKey);
             }
-        } catch (IOException ex) {
-            Logger.getLogger(RabbitMQFactory.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        } catch (Exception ex) {
+            Logger.getLogger(RabbitMQFactory.class.getName()).log(Level.SEVERE, "Error creating producing driver", ex);
+        } 
         return null;
     }
 
@@ -106,22 +103,22 @@ public class RabbitMQFactory implements DriverFactory {
         driverCount++;
 
         try {
+            RabbitMQConsumer ret;
+            
             if (cqueueName != null) {
-                if (cackBatch > 0) {
-                    return new RabbitMQConsumer(host, port, username, password, tcpNoDelay, recvBufferSize, cqueueName, cprefetch, cackBatch);
-                } else {
-                    return new RabbitMQConsumer(host, port, username, password, tcpNoDelay, recvBufferSize, cqueueName, cprefetch);
-                }
+                ret = new RabbitMQConsumer (amqpURI, tcpNoDelay, recvBufferSize, cqueueName, cprefetch);
+            }else{
+                ret = new RabbitMQConsumer (amqpURI, tcpNoDelay, recvBufferSize, cexchange, cextype, croutingKey, cprefetch);
             }
 
             if (cackBatch > 0) {
-                return new RabbitMQConsumer(host, port, username, password, tcpNoDelay, recvBufferSize, cexchange, cextype, croutingKey, cprefetch, cackBatch);
+                ret.setAckBatchSize(cackBatch);
             }
 
-            return new RabbitMQConsumer(host, port, username, password, tcpNoDelay, recvBufferSize, cexchange, cextype, croutingKey, cprefetch);
-        } catch (IOException ex) {
+            return ret;
+        } catch (Exception ex) {
             Logger.getLogger(RabbitMQFactory.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        } 
         return null;
     }
 }

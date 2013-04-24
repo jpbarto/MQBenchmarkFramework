@@ -11,6 +11,9 @@ import com.rabbitmq.client.QueueingConsumer;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 
 /**
  *
@@ -20,7 +23,7 @@ public class RabbitMQDriverBase {
     protected Connection conn = null;
     protected Channel chan = null;
 
-    public RabbitMQDriverBase (String hostname, int port, String username, String password, final boolean tcpNoDelay, final int bufferSize) throws IOException {
+    public RabbitMQDriverBase (String amqpURI, final boolean tcpNoDelay, final int bufferSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
         ConnectionFactory connF = new ConnectionFactory() {
             @Override
             public void configureSocket(Socket socket) throws SocketException {
@@ -29,10 +32,7 @@ public class RabbitMQDriverBase {
                 socket.setSendBufferSize(bufferSize);
             }
         };
-        connF.setHost(hostname);
-        connF.setPort(port);
-        connF.setUsername(username);
-        connF.setPassword(password);
+        connF.setUri(amqpURI);
 
         conn = connF.newConnection();
         chan = conn.createChannel();

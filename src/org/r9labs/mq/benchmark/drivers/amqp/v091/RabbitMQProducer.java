@@ -6,6 +6,9 @@ package org.r9labs.mq.benchmark.drivers.amqp.v091;
 
 import com.rabbitmq.client.MessageProperties;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.r9labs.mq.benchmark.drivers.ProducingDriver;
@@ -20,16 +23,17 @@ public class RabbitMQProducer extends RabbitMQDriverBase implements ProducingDri
     private String routingKey = null;
     private String queueName = null;
 
-    public RabbitMQProducer(String hostname, int port, String username, String password, final boolean tcpNoDelay, final int sendBuffSize, String exchangeName, String exchangeType, String routingKey) throws IOException {
-        super(hostname, port, username, password, tcpNoDelay, sendBuffSize);
+    public RabbitMQProducer(String amqpURI, final boolean tcpNoDelay, final int sendBuffSize, String exchangeName, String exchangeType, String routingKey) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, tcpNoDelay, sendBuffSize);
+        
         this.exchangeName = exchangeName;
         this.routingKey = routingKey;
 
         chan.exchangeDeclare(exchangeName, exchangeType);
     }
 
-    public RabbitMQProducer(String hostname, int port, String username, String password, final boolean tcpNoDelay, final int sendBuffSize, String queueName) throws IOException {
-        super(hostname, port, username, password, tcpNoDelay, sendBuffSize);
+    public RabbitMQProducer(String amqpURI, final boolean tcpNoDelay, final int sendBuffSize, String queueName) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, tcpNoDelay, sendBuffSize);
         this.queueName = queueName;
     }
 

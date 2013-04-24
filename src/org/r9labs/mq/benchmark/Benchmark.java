@@ -88,6 +88,8 @@ final class ReportFormatter extends Formatter {
 
 public class Benchmark {
 
+    private static final long MicroSecPerNS = 1000;
+
     public static void main(String[] args) {
         ConsoleHandler ch = new ConsoleHandler();
         ch.setFormatter(new ReportFormatter());
@@ -289,7 +291,6 @@ public class Benchmark {
                     long minLatency = -1;
                     long avgLatency = -1;
                     long maxLatency = -1;
-                    long MicroSecPerNS = 1000;
                     for (ConsumerThread c : consumers) {
                         recvMsgCount += c.statsMessageCount;
                         totalLatency += c.statsTotalLatency;
@@ -383,7 +384,7 @@ public class Benchmark {
             footer.append("\nAvg Send Rate: ").append(totalMsgSent / actDuration).append(" msg/s");
             footer.append("\nAvg Recv Rate: ").append(totalMsgRecv / actDuration).append(" msg/s");
             if (totalMsgRecv > 0) {
-                footer.append("\nAvg Latency: ").append(totalLatency / totalMsgRecv).append(" ms");
+                footer.append("\nAvg Latency: ").append((totalLatency / totalMsgRecv) / MicroSecPerNS).append(" microsec");
             }
 
             reporter.info(footer.toString());
