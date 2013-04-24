@@ -31,8 +31,8 @@ public class RabbitMQConsumer extends RabbitMQDriverBase implements ConsumingDri
     private String exchangeType = null;
     private String routingKey = null;
 
-    public RabbitMQConsumer(String amqpURI, final boolean tcpNoDelay, final int recvBuffSize, String exchangeName, String exchangeType, String routingKey, int prefetchSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-        super(amqpURI, tcpNoDelay, recvBuffSize);
+    public RabbitMQConsumer(String amqpURI, int frameMax, int heartbeat, final boolean tcpNoDelay, final int recvBuffSize, String exchangeName, String exchangeType, String routingKey, int prefetchSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, frameMax, heartbeat, tcpNoDelay, recvBuffSize);
 
          chan.basicQos(prefetchSize);
          this.exchangeName = exchangeName;
@@ -40,15 +40,15 @@ public class RabbitMQConsumer extends RabbitMQDriverBase implements ConsumingDri
          this.routingKey = routingKey;
     }
 
-    public RabbitMQConsumer(String amqpURI, final boolean tcpNoDelay, final int recvBuffSize, String queueName, int prefetchSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-        super(amqpURI, tcpNoDelay, recvBuffSize);
+    public RabbitMQConsumer(String amqpURI, int frameMax, int heartbeat, final boolean tcpNoDelay, final int recvBuffSize, String queueName, int prefetchSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, frameMax, heartbeat, tcpNoDelay, recvBuffSize);
 
         chan.basicQos(prefetchSize);
         this.queueName = queueName;
     }
 
-    public RabbitMQConsumer(String amqpURI, final boolean tcpNoDelay, final int recvBuffSize, int prefetchSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-        super(amqpURI, tcpNoDelay, recvBuffSize);
+    public RabbitMQConsumer(String amqpURI, int frameMax, int heartbeat, final boolean tcpNoDelay, final int recvBuffSize, int prefetchSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, frameMax, heartbeat, tcpNoDelay, recvBuffSize);
 
         chan.basicQos(prefetchSize);
     }

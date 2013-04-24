@@ -22,9 +22,8 @@ import org.r9labs.mq.benchmark.drivers.DriverFactory;
 public class RabbitMQFactory implements DriverFactory {
 
     String amqpURI;
-    int port;
-    String username;
-    String password;
+    int frameMax;
+    int heartbeat;
     boolean tcpNoDelay;
     int sendBufferSize;
     int recvBufferSize;
@@ -43,7 +42,8 @@ public class RabbitMQFactory implements DriverFactory {
     @Override
     public void initialize(Properties config) {
         amqpURI = (config.containsKey("amqp.broker.uri")) ? config.getProperty("amqp.broker.uri") : "amqp://127.0.0.1";
-
+        frameMax = (config.containsKey("amqp.broker.frameMax")) ? Integer.valueOf(config.getProperty("amqp.broker.frameMax")) : -1;
+        heartbeat = (config.containsKey("amqp.broker.heartbeat")) ? Integer.valueOf(config.getProperty("amqp.broker.heartbeat")) : -1;
         tcpNoDelay = (config.containsKey("amqp.socket.tcpNoDelay")) ? Boolean.valueOf(config.getProperty("amqp.socket.tcpNoDelay")) : true;
         sendBufferSize = (config.containsKey("amqp.socket.sendBufferSize")) ? Integer.valueOf(config.getProperty("amqp.socket.sendBufferSize")) : 20481;
         recvBufferSize = (config.containsKey("amqp.socket.recvBufferSize")) ? Integer.valueOf(config.getProperty("amqp.socket.recvBufferSize")) : 20481;
@@ -67,6 +67,8 @@ public class RabbitMQFactory implements DriverFactory {
         usage.append("RabbitMQFactory Properties File Values:\n");
         usage.append("\n");
         usage.append("amqp.broker.uri             : The URI for the AMQP broker\n");
+        usage.append("amqp.broker.frameMax        : Maximum frame size\n");
+        usage.append("amqp.broker.heartbeat       : Send a heartbeat signal every heartbeat seconds\n");
         usage.append("amqp.socket.tcpNoDelay      : {true|false} Enable | Disable TCP No delay on network sockets\n");
         usage.append("amqp.socket.sendBufferSize  : The size of the sockets sending buffer");
         usage.append("amqp.socket.recvBufferSize  : The size of the sockets receiving buffer");
@@ -88,9 +90,9 @@ public class RabbitMQFactory implements DriverFactory {
         driverCount++;
         try {
             if (pqueueName != null) {
-                return new RabbitMQProducer(amqpURI, tcpNoDelay, sendBufferSize, pqueueName);
+                return new RabbitMQProducer(amqpURI, frameMax, heartbeat, tcpNoDelay, sendBufferSize, pqueueName);
             } else {
-                return new RabbitMQProducer(amqpURI, tcpNoDelay, sendBufferSize, pexchange, pextype, proutingKey);
+                return new RabbitMQProducer(amqpURI, frameMax, heartbeat, tcpNoDelay, sendBufferSize, pexchange, pextype, proutingKey);
             }
         } catch (Exception ex) {
             Logger.getLogger(RabbitMQFactory.class.getName()).log(Level.SEVERE, "Error creating producing driver", ex);
@@ -106,9 +108,9 @@ public class RabbitMQFactory implements DriverFactory {
             RabbitMQConsumer ret;
             
             if (cqueueName != null) {
-                ret = new RabbitMQConsumer (amqpURI, tcpNoDelay, recvBufferSize, cqueueName, cprefetch);
+                ret = new RabbitMQConsumer (amqpURI, frameMax, heartbeat, tcpNoDelay, recvBufferSize, cqueueName, cprefetch);
             }else{
-                ret = new RabbitMQConsumer (amqpURI, tcpNoDelay, recvBufferSize, cexchange, cextype, croutingKey, cprefetch);
+                ret = new RabbitMQConsumer (amqpURI, frameMax, heartbeat, tcpNoDelay, recvBufferSize, cexchange, cextype, croutingKey, cprefetch);
             }
 
             if (cackBatch > 0) {

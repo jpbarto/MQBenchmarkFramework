@@ -23,8 +23,8 @@ public class RabbitMQProducer extends RabbitMQDriverBase implements ProducingDri
     private String routingKey = null;
     private String queueName = null;
 
-    public RabbitMQProducer(String amqpURI, final boolean tcpNoDelay, final int sendBuffSize, String exchangeName, String exchangeType, String routingKey) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-        super(amqpURI, tcpNoDelay, sendBuffSize);
+    public RabbitMQProducer(String amqpURI, int frameMax, int heartbeat, final boolean tcpNoDelay, final int sendBuffSize, String exchangeName, String exchangeType, String routingKey) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, frameMax, heartbeat, tcpNoDelay, sendBuffSize);
         
         this.exchangeName = exchangeName;
         this.routingKey = routingKey;
@@ -32,8 +32,8 @@ public class RabbitMQProducer extends RabbitMQDriverBase implements ProducingDri
         chan.exchangeDeclare(exchangeName, exchangeType);
     }
 
-    public RabbitMQProducer(String amqpURI, final boolean tcpNoDelay, final int sendBuffSize, String queueName) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-        super(amqpURI, tcpNoDelay, sendBuffSize);
+    public RabbitMQProducer(String amqpURI, int frameMax, int heartbeat, final boolean tcpNoDelay, final int sendBuffSize, String queueName) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+        super(amqpURI, frameMax, heartbeat, tcpNoDelay, sendBuffSize);
         this.queueName = queueName;
     }
 

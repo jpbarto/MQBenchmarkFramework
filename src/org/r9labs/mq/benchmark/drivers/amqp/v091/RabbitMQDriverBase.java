@@ -23,7 +23,7 @@ public class RabbitMQDriverBase {
     protected Connection conn = null;
     protected Channel chan = null;
 
-    public RabbitMQDriverBase (String amqpURI, final boolean tcpNoDelay, final int bufferSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
+    public RabbitMQDriverBase (String amqpURI, final int frameMax, final int heartbeat, final boolean tcpNoDelay, final int bufferSize) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
         ConnectionFactory connF = new ConnectionFactory() {
             @Override
             public void configureSocket(Socket socket) throws SocketException {
@@ -33,6 +33,12 @@ public class RabbitMQDriverBase {
             }
         };
         connF.setUri(amqpURI);
+        if (frameMax >= 0) {
+            connF.setRequestedFrameMax(frameMax);
+        }
+        if (heartbeat >= 0) {
+            connF.setRequestedHeartbeat(heartbeat);
+        }
 
         conn = connF.newConnection();
         chan = conn.createChannel();
