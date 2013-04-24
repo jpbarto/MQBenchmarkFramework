@@ -28,8 +28,9 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.ParseException;
 
 class GetOne {
-    public Integer getOne () {
-        return new Integer (1);
+
+    public Integer getOne() {
+        return new Integer(1);
     }
 }
 
@@ -38,9 +39,9 @@ class BenchmarkThread extends Thread {
     private boolean runFlag = false;
     public long iterCount = 0;
     private GetOne driver;
-    
-    public BenchmarkThread () {
-        driver = new GetOne ();
+
+    public BenchmarkThread() {
+        driver = new GetOne();
     }
 
     public void stopThread() {
@@ -98,11 +99,12 @@ public class Benchmark {
 
         Options opts = new Options()
                 .addOption("duration", true, "Duration of test in seconds")
+                .addOption("mcount", true, "Number of messages to send / recv before stopping")
                 .addOption("interval", true, "How often to report performance (seconds)")
                 .addOption("csv", false, "Report using comma separated values")
                 .addOption("pmo", false, "Print a report for every message sent or received")
                 .addOption("msize", true, "Size of messages to send (bytes)")
-                .addOption("slimit", true, "Maximum number of messages/s to send")
+                .addOption("rlimit", true, "Maximum number of messages/s to send")
                 .addOption("pc", true, "Number of publishing connections to make")
                 .addOption("cc", true, "Number of consuming connections to make")
                 .addOption("df", true, "Class name of driver factory")
@@ -120,17 +122,22 @@ public class Benchmark {
         }
 
         int duration = (clopts.hasOption("duration")) ? Integer.valueOf(clopts.getOptionValue("duration")) : Integer.MAX_VALUE;
+        int mcount = (clopts.hasOption("mcount")) ? Integer.valueOf(clopts.getOptionValue("mcount")) : 0;
         int rptInterval = (clopts.hasOption("interval")) ? Integer.valueOf(clopts.getOptionValue("interval")) : 1;
         boolean csvOutput = (clopts.hasOption("csv")) ? true : false;
         boolean perMsgOutput = (clopts.hasOption("pmo")) ? true : false;
         int payloadSize = (clopts.hasOption("msize")) ? Integer.valueOf(clopts.getOptionValue("msize")) : 0;
-        long sendLimit = (clopts.hasOption("slimit")) ? Long.valueOf(clopts.getOptionValue("slimit")) : 0;
+        long sendLimit = (clopts.hasOption("rlimit")) ? Long.valueOf(clopts.getOptionValue("rlimit")) : 0;
         int pCount = (clopts.hasOption("pc")) ? Integer.valueOf(clopts.getOptionValue("pc")) : 1;
         int cCount = (clopts.hasOption("cc")) ? Integer.valueOf(clopts.getOptionValue("cc")) : 1;
         String logFile = (clopts.hasOption("log")) ? clopts.getOptionValue("log") : null;
         String driverFactoryClassName = (clopts.hasOption("df")) ? clopts.getOptionValue("df") : "org.r9labs.mq.benchmark.drivers.blank.BlankFactory";
         String propFilename = (clopts.hasOption("props")) ? clopts.getOptionValue("props") : null;
         boolean silent = clopts.hasOption("silent");
+
+        if ((mcount > 0 && sendLimit <= 0) || (mcount > 0 && sendLimit > mcount)) {
+            sendLimit = mcount;
+        }
 
         if (clopts.hasOption("silent")) {
             ch.setLevel(Level.CONFIG);
@@ -191,7 +198,8 @@ public class Benchmark {
                 .append("\nMsg Size (bytes): ").append(payloadSize)
                 .append("\nProducers       : ").append(pCount)
                 .append("\nConsumers       : ").append(cCount)
-                .append("\nSend Limit      : ").append(sendLimit)
+                .append("\nRate Limit      : ").append(sendLimit)
+                .append("\nMessage Count   : ").append(mcount)
                 .append("\nDuration        : ").append(duration)
                 .append("\nReport Interval : ").append(rptInterval)
                 .append("\nCSV Output      : ").append(csvOutput)
@@ -223,7 +231,7 @@ public class Benchmark {
         }
         bt1.stopThread();
         bt2.stopThread();
-        reporter.log(Level.INFO, "Thread 1 / Thread 2: "+ (bt1.iterCount / 1) +" / "+ (bt2.iterCount / 1) +" average operations per second.");
+        reporter.log(Level.INFO, "Thread 1 / Thread 2: " + (bt1.iterCount / 1) + " / " + (bt2.iterCount / 1) + " average operations per second.");
         bt1 = null;
         bt2 = null;
 
@@ -268,7 +276,8 @@ public class Benchmark {
 
             duration *= 1000;
             rptInterval *= 1000;
-            while ((currentTS - startTS) <= duration) {
+            while ((mcount <= 0 && (currentTS - startTS) <= duration)
+                    || (mcount > 0 && totalMsgSent < mcount && totalMsgRecv < mcount)) {
                 if ((currentTS - lastReportTS) >= rptInterval) {
                     long sentMsgCount = 0;
                     for (ProducerThread p : producers) {
@@ -323,9 +332,9 @@ public class Benchmark {
                     }
 
                     lastReportTS = currentTS;
+                } else {
+                    Thread.sleep(rptInterval);
                 }
-                Thread.sleep(rptInterval);
-
                 currentTS = System.currentTimeMillis();
             }
 
