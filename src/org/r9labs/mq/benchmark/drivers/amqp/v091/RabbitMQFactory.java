@@ -90,7 +90,11 @@ public class RabbitMQFactory implements DriverFactory {
     public ProducingDriver createProducingDriver() {
         driverCount++;
         try {
-            return new RabbitMQProducer(host, port, username, password, tcpNoDelay, sendBufferSize, pexchange, pextype, proutingKey);
+            if (pqueueName != null) {
+                return new RabbitMQProducer(host, port, username, password, tcpNoDelay, sendBufferSize, pqueueName);
+            } else {
+                return new RabbitMQProducer(host, port, username, password, tcpNoDelay, sendBufferSize, pexchange, pextype, proutingKey);
+            }
         } catch (IOException ex) {
             Logger.getLogger(RabbitMQFactory.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -109,11 +113,11 @@ public class RabbitMQFactory implements DriverFactory {
                     return new RabbitMQConsumer(host, port, username, password, tcpNoDelay, recvBufferSize, cqueueName, cprefetch);
                 }
             }
-            
+
             if (cackBatch > 0) {
                 return new RabbitMQConsumer(host, port, username, password, tcpNoDelay, recvBufferSize, cexchange, cextype, croutingKey, cprefetch, cackBatch);
             }
-            
+
             return new RabbitMQConsumer(host, port, username, password, tcpNoDelay, recvBufferSize, cexchange, cextype, croutingKey, cprefetch);
         } catch (IOException ex) {
             Logger.getLogger(RabbitMQFactory.class.getName()).log(Level.SEVERE, null, ex);
