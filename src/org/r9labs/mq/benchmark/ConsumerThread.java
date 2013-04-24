@@ -17,13 +17,14 @@ public class ConsumerThread extends Thread {
     boolean runFlag = true;
     protected ConsumingDriver driver;
     protected ConsumedMessageHandler msgHandler = null;
-    public long statsMessageCount = 0;
-    public long statsMinLatency = -1;
-    public long statsMaxLatency = 0;
-    public long statsTotalLatency = 0;
+    public long statsMessageCount;
+    public long statsMinLatency;
+    public long statsMaxLatency;
+    public long statsTotalLatency;
 
     public ConsumerThread(DriverFactory df) {
         driver = df.createConsumingDriver();
+        resetStats ();
     }
 
     public void stopThread() {
@@ -34,7 +35,7 @@ public class ConsumerThread extends Thread {
         msgHandler = h;
     }
 
-    public void resetStats() {
+    public final void resetStats() {
         statsTotalLatency = 0;
         statsMinLatency = -1;
         statsMaxLatency = 0;
@@ -52,8 +53,6 @@ public class ConsumerThread extends Thread {
         long sentTS = 0;
         long recvTS;
         long latency;
-        final String delim = ":";    
-        String attribs[];
 
         while (runFlag) {
             msgSeqNo = 0;
@@ -67,7 +66,7 @@ public class ConsumerThread extends Thread {
             }
 
             messageBuf = ByteBuffer.wrap (msgBytes);
-            recvTS = System.currentTimeMillis();
+            recvTS = System.nanoTime();
             seqNo++;
             statsMessageCount++;
 

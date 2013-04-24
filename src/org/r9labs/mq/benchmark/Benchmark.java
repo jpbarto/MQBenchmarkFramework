@@ -119,7 +119,7 @@ public class Benchmark {
             reporter.log(Level.SEVERE, null, ex);
         }
 
-        int duration = (clopts.hasOption("duration")) ? Integer.valueOf(clopts.getOptionValue("duration")) : 10;
+        int duration = (clopts.hasOption("duration")) ? Integer.valueOf(clopts.getOptionValue("duration")) : Integer.MAX_VALUE;
         int rptInterval = (clopts.hasOption("interval")) ? Integer.valueOf(clopts.getOptionValue("interval")) : 1;
         boolean csvOutput = (clopts.hasOption("csv")) ? true : false;
         boolean perMsgOutput = (clopts.hasOption("pmo")) ? true : false;
@@ -219,7 +219,7 @@ public class Benchmark {
         try {
             Thread.sleep(1000);
         } catch (InterruptedException ex) {
-            reporter.log(Level.WARNING, "Interrupted while waiting 10 seconds for iteration benchmark");
+            reporter.log(Level.WARNING, "Interrupted while waiting 1 second for iteration benchmark");
         }
         bt1.stopThread();
         bt2.stopThread();
@@ -263,15 +263,13 @@ public class Benchmark {
             long currentTS = startTS;
             long lastReportTS = startTS;
             if (csvOutput && !perMsgOutput) {
-                reporter.fine("Time Step,sent/s,recv/s,min,avg,max latency");
+                reporter.fine("Time Step,sent/s,recv/s,min,avg,max latency(microsec)");
             }
 
             duration *= 1000;
             rptInterval *= 1000;
             while ((currentTS - startTS) <= duration) {
                 if ((currentTS - lastReportTS) >= rptInterval) {
-                    long startReportTS = System.currentTimeMillis();
-
                     long sentMsgCount = 0;
                     for (ProducerThread p : producers) {
                         sentMsgCount += p.statsMessageCount;
@@ -282,21 +280,22 @@ public class Benchmark {
                     long minLatency = -1;
                     long avgLatency = -1;
                     long maxLatency = -1;
+                    long MicroSecPerNS = 1000;
                     for (ConsumerThread c : consumers) {
                         recvMsgCount += c.statsMessageCount;
                         totalLatency += c.statsTotalLatency;
                         avgLatency += c.statsTotalLatency;
                         if (minLatency == -1 || c.statsMinLatency < minLatency) {
-                            minLatency = c.statsMinLatency;
+                            minLatency = c.statsMinLatency / MicroSecPerNS;
                         }
                         if (c.statsMaxLatency > maxLatency) {
-                            maxLatency = c.statsMaxLatency;
+                            maxLatency = c.statsMaxLatency / MicroSecPerNS;
                         }
                         c.resetStats();
                     }
 
                     if (recvMsgCount > 0) {
-                        avgLatency = avgLatency / recvMsgCount;
+                        avgLatency = (avgLatency / recvMsgCount) / MicroSecPerNS;
                     } else {
                         avgLatency = -1;
                     }
@@ -318,7 +317,7 @@ public class Benchmark {
                             line.append("Time Step ").append((currentTS - startTS) / 1000).append("s: ");
                             line.append("Sent (msg/s): ").append(sendRate);
                             line.append(", Recv (msg/s): ").append(recvRate);
-                            line.append(", Latency (min/avg/max ms): ").append(minLatency).append("/").append(avgLatency).append("/").append(maxLatency);
+                            line.append(", Latency (min/avg/max microsec): ").append(minLatency).append("/").append(avgLatency).append("/").append(maxLatency);
                             reporter.fine(line.toString());
                         }
                     }

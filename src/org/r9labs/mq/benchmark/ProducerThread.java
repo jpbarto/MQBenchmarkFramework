@@ -58,7 +58,7 @@ public class ProducerThread extends Thread {
 
         while (runFlag) {
             if (sendLimit == 0 || statsMessageCount < sendLimit) {
-                long sentTS = System.currentTimeMillis();
+                long sentTS = System.nanoTime();
                 messageBytes.putLong(0, seqNo);
                 messageBytes.putLong(8, sentTS);
 
