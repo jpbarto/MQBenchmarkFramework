@@ -65,8 +65,8 @@ public class ConsumerThread extends Thread {
                 continue;
             }
 
-            messageBuf = ByteBuffer.wrap (msgBytes);
             recvTS = System.nanoTime();
+            messageBuf = ByteBuffer.wrap (msgBytes);
             seqNo++;
             statsMessageCount++;
 
