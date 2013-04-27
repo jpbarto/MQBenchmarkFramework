@@ -27,7 +27,7 @@ public class BlankDriver implements ProducingDriver, ConsumingDriver {
     @Override
     public final byte[] getMessage() {
         messageBytes.putLong(0, seqNo++);
-        messageBytes.putLong(8, System.currentTimeMillis());
+        messageBytes.putLong(8, System.nanoTime());
         return messageBytes.array();
     }
 
