@@ -5,12 +5,8 @@
 package org.r9labs.mq.benchmark.drivers.amqp.v091;
 
 import com.rabbitmq.client.ConnectionFactory;
-import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -101,8 +97,8 @@ public class RabbitMQFactory implements DriverFactory {
     }
 
     @Override
-    public String getUsage() {
-        StringBuffer usage = new StringBuffer();
+    public String getUsage() {  
+        StringBuilder usage = new StringBuilder();
         usage.append("RabbitMQFactory Properties File Values:\n");
         usage.append("\n");
         usage.append("amqp.broker.uri             : The URI for the AMQP broker\n");
@@ -111,16 +107,21 @@ public class RabbitMQFactory implements DriverFactory {
         usage.append("amqp.socket.tcpNoDelay      : {true|false} Enable | Disable TCP No delay on network sockets\n");
         usage.append("amqp.socket.sendBufferSize  : The size of the sockets sending buffer");
         usage.append("amqp.socket.recvBufferSize  : The size of the sockets receiving buffer");
+        
         usage.append("amqp.producer.exchange      : Name of the exchange to send messages to\n");
         usage.append("amqp.producer.exchange.type : The named producer exchanges type [topic, fanout, direct]\n");
         usage.append("amqp.producer.routingkey    : Routing key for publisher\n");
         usage.append("amqp.producer.queue         : The name of the queue to send messages to; one will be created if not specified\n");
+        usage.append("amqp.producer.txsize        : How many messages to send before commiting a transaction\n");
+        
         usage.append("amqp.consumer.exchange      : Name of the exchange to consumer messages from\n");
         usage.append("amqp.consumer.exchange.type : The named consumer exchanges type [topic, fanout, direct]\n");
         usage.append("amqp.consumer.routingkey    : Routing key for consumer\n");
         usage.append("amqp.consumer.queue         : The name of the queue to consume from; one will be created if not specified\n");
         usage.append("amqp.consumer.prefetch      : The number of messages to prefetch\n");
+        usage.append("amqp.consumer.autoack       : Whether to automatically acknowledge every message as its received\n");
         usage.append("amqp.consumer.ackEvery      : Batch acknowledgement by only sending an acknowledge message ackEvery messages\n");
+        usage.append("amqp.consumer.txsize        : How many messages to consumer before acknowledging a transaction\n");
         return usage.toString();
     }
 
