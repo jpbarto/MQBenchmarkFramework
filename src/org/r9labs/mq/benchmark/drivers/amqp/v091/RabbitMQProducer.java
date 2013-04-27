@@ -4,6 +4,9 @@
  */
 package org.r9labs.mq.benchmark.drivers.amqp.v091;
 
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.MessageProperties;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -17,14 +20,18 @@ import org.r9labs.mq.benchmark.drivers.ProducingDriver;
  *
  * @author jpbarto
  */
-public class RabbitMQProducer extends RabbitMQDriverBase implements ProducingDriver {
-
+public class RabbitMQProducer implements ProducingDriver {
+    private Connection conn = null;
+    private Channel chan = null;
     private String exchangeName = null;
     private String routingKey = null;
     private String queueName = null;
+    private int txSize = 0;
+    private long totalMsgSent = 0;
 
-    public RabbitMQProducer(String amqpURI, int frameMax, int heartbeat, final boolean tcpNoDelay, final int sendBuffSize, String exchangeName, String exchangeType, String routingKey) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-        super(amqpURI, frameMax, heartbeat, tcpNoDelay, sendBuffSize);
+    public RabbitMQProducer(ConnectionFactory connectionF, String exchangeName, String exchangeType, String routingKey) throws IOException {
+        conn = connectionF.newConnection();
+        chan = conn.createChannel();
         
         this.exchangeName = exchangeName;
         this.routingKey = routingKey;
@@ -32,9 +39,15 @@ public class RabbitMQProducer extends RabbitMQDriverBase implements ProducingDri
         chan.exchangeDeclare(exchangeName, exchangeType);
     }
 
-    public RabbitMQProducer(String amqpURI, int frameMax, int heartbeat, final boolean tcpNoDelay, final int sendBuffSize, String queueName) throws IOException, URISyntaxException, NoSuchAlgorithmException, KeyManagementException {
-        super(amqpURI, frameMax, heartbeat, tcpNoDelay, sendBuffSize);
+    public RabbitMQProducer(ConnectionFactory connectionF, String queueName) throws IOException {
+        conn = connectionF.newConnection();
+        chan = conn.createChannel();
+        
         this.queueName = queueName;
+    }
+    
+    public void setTxSize (int txSize) {
+        this.txSize = txSize;
     }
 
     @Override
@@ -55,9 +68,14 @@ public class RabbitMQProducer extends RabbitMQDriverBase implements ProducingDri
     public boolean sendMessage(byte[] message) {
         try {
             if (queueName != null) {
-                chan.basicPublish("", queueName, MessageProperties.BASIC, message);
+                chan.basicPublish("", queueName, MessageProperties.MINIMAL_BASIC, message);
             } else {
-                chan.basicPublish(exchangeName, routingKey, MessageProperties.BASIC, message);
+                chan.basicPublish(exchangeName, routingKey, MessageProperties.MINIMAL_BASIC, message);
+            }
+            totalMsgSent++;
+            
+            if (txSize > 0 && totalMsgSent % txSize == 0) {
+                chan.txCommit();
             }
         } catch (IOException ex) {
             Logger.getLogger(RabbitMQProducer.class.getName()).log(Level.SEVERE, "Error publishing message", ex);
