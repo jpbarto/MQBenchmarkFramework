@@ -8,14 +8,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
-import javax.jms.TopicConnection;
-import javax.jms.TopicConnectionFactory;
-import javax.jms.TopicSession;
-import javax.jms.TopicSubscriber;
 import javax.naming.Context;
 import javax.naming.NamingException;
 import org.r9labs.mq.benchmark.drivers.ConsumingDriver;
@@ -33,9 +31,9 @@ public class JMSConsumer implements ConsumingDriver {
     private String queueName = null;
     private Queue queue = null;
     private Context context = null;
-    private TopicSession session = null;
-    private TopicConnection conn = null;
-    private TopicSubscriber cin = null;
+    private Session session = null;
+    private Connection conn = null;
+    private MessageConsumer cin = null;
 
     public JMSConsumer(Context context) {
         this.context = context;
@@ -56,27 +54,47 @@ public class JMSConsumer implements ConsumingDriver {
 
     @Override
     public void start() {
-       if (topicName != null) {
-            TopicConnectionFactory connF;
+       try {
+            ConnectionFactory connF;
             try {
-                connF = (TopicConnectionFactory) context.lookup("ConnectionFactory");
+                connF = (ConnectionFactory) context.lookup("ConnectionFactory");
             } catch (NamingException ex) {
                 Logger.getLogger(JMSProducer.class.getName()).log(Level.SEVERE, "Error retrieving connection factory from context", ex);
                 return;
             }
 
+            if (username != null) {
+                conn = connF.createConnection(username, password);
+            } else {
+                conn = connF.createConnection();
+            }
+            conn.start();
+
+            session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        } catch (JMSException ex) {
+            Logger.getLogger(JMSProducer.class.getName()).log(Level.SEVERE, "Error connecting to broker and creating a session", ex);
+        }
+
+        if (topicName != null) {
             try {
-                if (username != null) {
-                    conn = connF.createTopicConnection(username, password);
-                } else {
-                    conn = connF.createTopicConnection();
-                }
-                conn.start();
-                session = conn.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
                 topic = session.createTopic(topicName);
-                cin = session.createSubscriber(topic);
+                cin = session.createConsumer(topic);
             } catch (JMSException ex) {
-                Logger.getLogger(JMSProducer.class.getName()).log(Level.SEVERE, "Error creating message consumer", ex);
+                Logger.getLogger(JMSProducer.class.getName()).log(Level.SEVERE, "Error creating message producer for topic: " + topicName, ex);
+            }
+        }else if (queueName != null) {
+            try {
+                queue = session.createQueue(queueName);
+                cin = session.createConsumer(queue);
+            } catch (JMSException ex) {
+                Logger.getLogger(JMSProducer.class.getName()).log(Level.SEVERE, "Error creating message producer for queue: "+ queueName, ex);
+            }
+        }else{
+            try {
+                queue = session.createTemporaryQueue();
+                cin = session.createConsumer (queue);
+            } catch (JMSException ex) {
+                Logger.getLogger(JMSProducer.class.getName()).log(Level.SEVERE, "Error creating temporary queue (no queue or topic provided)", ex);
             }
         }
     }
