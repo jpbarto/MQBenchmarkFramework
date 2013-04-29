@@ -48,7 +48,14 @@ public class JMSDriverFactory implements DriverFactory {
 
     @Override
     public String getUsage() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        StringBuilder sb = new StringBuilder ()
+                .append("jmsfactory.broker.username : Username to be used when connecting to the JMS broker\n")
+                .append("jmsfactory.broker.password : Password to be used when connecting to the JMS broker\n")
+                .append("jmsfactory.producer.topic  : Topic to which messages should be sent\n")
+                .append("jmsfactory.producer.queue  : Queue to which messages should be sent\n")
+                .append("jmsfactory.consumer.topic  : Topic from which messages should be retrieved\n")
+                .append("jmsfactory.consumer.queue  : Queue from which messages should be retrieved\n");
+        return sb.toString();
     }
 
     @Override
