@@ -5,15 +5,19 @@
 package org.r9labs.mq.benchmark.drivers.amqp.v100;
 
 import java.util.Collections;
+import java.util.logging.Level;
 import org.apache.log4j.Logger;
 import org.apache.qpid.amqp_1_0.client.AcknowledgeMode;
 import org.apache.qpid.amqp_1_0.type.DistributionMode;
 import org.apache.qpid.amqp_1_0.client.Connection;
+import org.apache.qpid.amqp_1_0.client.ConnectionErrorException;
 import org.apache.qpid.amqp_1_0.client.ConnectionException;
+import org.apache.qpid.amqp_1_0.client.LinkDetachedException;
 import org.apache.qpid.amqp_1_0.client.Message;
 import org.apache.qpid.amqp_1_0.client.Receiver;
 import org.apache.qpid.amqp_1_0.client.Session;
 import org.apache.qpid.amqp_1_0.client.Transaction;
+import org.apache.qpid.amqp_1_0.transport.ConnectionEndpoint;
 import org.apache.qpid.amqp_1_0.transport.Container;
 import org.apache.qpid.amqp_1_0.type.Section;
 import org.apache.qpid.amqp_1_0.type.Symbol;
@@ -38,9 +42,9 @@ public class QpidConsumer implements ConsumingDriver {
     private int windowSize;
     private int credit = 0;
     
-    public QpidConsumer (String host, int port, String user, String pass, String source, String filterStr, int frameSize, String remoteHost, boolean useSSL, int windowSize, AcknowledgeMode amode, DistributionMode dmode, String linkName, boolean isDurable, int txnSize) throws ConnectionException {
+    public QpidConsumer (String host, int port, String user, String pass, String source, String filterStr, int frameSize, String remoteHost, boolean useSSL, int windowSize, AcknowledgeMode amode, DistributionMode dmode, String linkName, boolean isDurable, int txnSize, int maxChannel) throws ConnectionException, LinkDetachedException {
         Container container = new Container (); // new Container(containerName)
-        conn = new Connection (host, port, user, pass, frameSize, container, remoteHost, useSSL);
+        conn = new Connection (host, port, user, pass, frameSize, container, remoteHost, useSSL, maxChannel);
                
         this.windowSize = windowSize;
         
@@ -72,7 +76,11 @@ public class QpidConsumer implements ConsumingDriver {
     public void stop() {
         cin.close();
         session.close();
-        conn.close();
+        try {
+            conn.close();
+        } catch (ConnectionErrorException ex) {
+            Logger.getLogger(QpidConsumer.class.getName ()).warn("Error closing connection: "+ ex);
+        }
     }
 
     @Override
@@ -95,7 +103,11 @@ public class QpidConsumer implements ConsumingDriver {
             txnCount++;
             if (txnCount >= txnSize) {
                 txnCount = 0;
-                txn.commit();
+                try {
+                    txn.commit();
+                } catch (LinkDetachedException ex) {
+                    java.util.logging.Logger.getLogger(QpidConsumer.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
         

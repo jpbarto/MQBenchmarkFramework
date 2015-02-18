@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.qpid.amqp_1_0.client.AcknowledgeMode;
 import org.apache.qpid.amqp_1_0.client.ConnectionException;
+import org.apache.qpid.amqp_1_0.client.LinkDetachedException;
 import org.apache.qpid.amqp_1_0.type.DistributionMode;
 import org.apache.qpid.amqp_1_0.type.messaging.StdDistMode;
 import org.r9labs.mq.benchmark.drivers.ConsumingDriver;
@@ -36,6 +37,7 @@ public class QpidDriverFactory implements DriverFactory {
     private AcknowledgeMode pAckMode;
     private String pLinkName;
     private boolean pUseTrans;
+    private int pMaxChannels;
     
     // Consumer Parameters
     private String source;
@@ -50,6 +52,7 @@ public class QpidDriverFactory implements DriverFactory {
     private boolean cDurable;
     private boolean cUseTrans;
     private int cTxnSize;
+    private int cMaxChannel;
 
     @Override
     public void initialize(Properties properties) {
@@ -67,6 +70,7 @@ public class QpidDriverFactory implements DriverFactory {
         pAckMode = (properties.containsKey("qpiddriver.producer.ackMode")) ? AcknowledgeMode.valueOf(properties.getProperty("qpiddriver.producer.ackMode")) : AcknowledgeMode.ALO;
         pLinkName = (properties.containsKey("qpiddriver.producer.linkName")) ? properties.getProperty("qpiddriver.producer.linkName") : null;
         pUseTrans = (properties.containsKey("qpiddriver.producer.useTransactions")) ? Boolean.valueOf(properties.getProperty("qpiddriver.producer.useTransactions")) : false;
+        pMaxChannels = (properties.containsKey("qpiddriver.producer.maxChannels")) ? Integer.valueOf(properties.getProperty("qpiddriver.producer.maxChannels")) : 5;
 
         source = (properties.containsKey("qpiddriver.consumer.source")) ? properties.getProperty("qpiddriver.consumer.source") : null;
         cFilter = (properties.containsKey("qpiddriver.consumer.filter")) ? properties.getProperty("qpiddriver.consumer.filter") : null;
@@ -79,6 +83,7 @@ public class QpidDriverFactory implements DriverFactory {
         cLinkName = (properties.containsKey("qpiddriver.consumer.linkName")) ? properties.getProperty("qpiddriver.consumer.linkName") : null;
         cDurable = (properties.containsKey("qpiddriver.consumer.durable")) ? Boolean.valueOf(properties.getProperty("qpiddriver.consumer.durable")) : false;
         cTxnSize = (properties.containsKey("qpiddriver.consumer.transactionSize")) ? Integer.valueOf(properties.getProperty("qpiddriver.consumer.transactionSize")) : 0;
+        cMaxChannel = (properties.containsKey("qpiddriver.consumer.maxChannels")) ? Integer.valueOf (properties.getProperty("qpiddriver.consumer.maxChannels")) : 5;
     }
 
     @Override
@@ -118,7 +123,7 @@ public class QpidDriverFactory implements DriverFactory {
     @Override
     public ProducingDriver createProducingDriver() {
         try {
-            return new QpidProducer(hostname, port, username, password, target, pSubject, pFrameSize, pRemoteHost, pUseSSL, pWindowSize, pAckMode, pLinkName, pUseTrans);
+            return new QpidProducer(hostname, port, username, password, target, pSubject, pFrameSize, pRemoteHost, pUseSSL, pWindowSize, pAckMode, pLinkName, pUseTrans, pMaxChannels);
         } catch (Exception ex) {
             Logger.getLogger(QpidDriverFactory.class.getName()).log(Level.SEVERE, "Error instantiating QpidProducer", ex);
         }
@@ -128,8 +133,10 @@ public class QpidDriverFactory implements DriverFactory {
     @Override
     public ConsumingDriver createConsumingDriver() {
         try {
-            return new QpidConsumer(hostname, port, username, password, source, cFilter, cFrameSize, cRemoteHost, cUseSSL, cWinSize, cAckMode, cDistMode, cLinkName, cDurable, cTxnSize);
+            return new QpidConsumer(hostname, port, username, password, source, cFilter, cFrameSize, cRemoteHost, cUseSSL, cWinSize, cAckMode, cDistMode, cLinkName, cDurable, cTxnSize, cMaxChannel);
         } catch (ConnectionException ex) {
+            Logger.getLogger(QpidDriverFactory.class.getName()).log(Level.SEVERE, "Error instantiating QpidConsumer", ex);
+        } catch (LinkDetachedException ex) {
             Logger.getLogger(QpidDriverFactory.class.getName()).log(Level.SEVERE, "Error instantiating QpidConsumer", ex);
         }
         return null;

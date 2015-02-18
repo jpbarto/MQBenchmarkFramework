@@ -74,7 +74,6 @@ public class RabbitMQFactory implements DriverFactory {
         }
         
         connF = new ConnectionFactory() {
-            @Override
             public void configureSocket(Socket socket) throws SocketException {
                 socket.setTcpNoDelay(tcpNoDelay);
                 if (sendBufferSize > 0) {
