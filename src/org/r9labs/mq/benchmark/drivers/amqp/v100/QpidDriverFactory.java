@@ -83,7 +83,36 @@ public class QpidDriverFactory implements DriverFactory {
 
     @Override
     public String getUsage() {
-        return "";
+        StringBuilder sb = new StringBuilder ()
+                .append("QpidDriver Factory Properties Configuration:\n")
+                .append("\n")
+                .append("qpiddriver.broker.hostname         : The hostname or IP of the AMQP 1.0.0 broker\n")
+                .append("qpiddriver.broker.port             : AMQP port\n")
+                .append("qpiddriver.broker.username         : Username to use when creating a connection to broker\n")
+                .append("qpiddriver.broker.password         : Password to use when creating a connection to broker\n")
+                
+                .append("qpiddriver.producer.target         : Publish messages to AMQP target identifier\n")
+                .append("qpiddriver.producer.subject        : Send messages with the meessage subject field set to subject\n")
+                .append("qpiddirver.producer.frameSize      : Frame size for produced messages\n")
+                .append("qpiddriver.producer.remoteHost     : Remote host field for produced messages\n")
+                .append("qpiddriver.producer.useSSL         : Connect to the broker using AMQPS rather than AMQP\n")
+                .append("qpiddriver.producer.windowSize     : Window size for produced messages\n")
+                .append("qpiddriver.producer.ackMode        : Which mode to use when acknowledging produced messages; values := [ALO|AMO|EO] (At least once, at most once, exactly once)\n")
+                .append("qpiddriver.producer.linkName       : Name of producer's link\n")
+                .append("qpiddriver.producer.useTransactions: Set to true to use transactions when sending messages\n")
+                
+                .append("qpiddriver.consumer.source         : Consume messages from AMQP source identifier\n")
+                .append("qpiddriver.consumer.filter         : Consume only messages which meet the filter criteria\n")
+                .append("qpiddriver.consumer.frameSize      : Frame size of consumed messages\n")
+                .append("qpiddriver.consumer.remoteHost     : Consumer remote host\n")
+                .append("qpiddriver.consumer.useSSL         : Connect to the AMQP broker using SSL; [true|false]\n")
+                .append("qpiddriver.consumer.windowSize     : Consumer window size\n")
+                .append("qpiddriver.consumer.ackMode        : Acknolwedge mode to be used during consumption; [ALO|AMO|EO] (At least once, at most once, exactly once)\n")
+                .append("qpiddriver.consumer.distMode       : Distribution mode to use when consuming messages; [COPY|MOVE]\n")
+                .append("qpiddriver.consumer.linkName       : Link name\n")
+                .append("qpiddriver.consumer.durable        : Declare the queue to be durable; [true|false]\n")
+                .append("qpiddriver.consumer.transactionSize: Receive <transactionSize> messages before commiting transaction\n");
+        return sb.toString();
     }
 
     @Override
